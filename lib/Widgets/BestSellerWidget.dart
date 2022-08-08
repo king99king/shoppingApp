@@ -18,10 +18,11 @@ class BestSellerWidget extends StatefulWidget {
 class _BestSellerWidgetState extends State<BestSellerWidget> {
   List<CardItem> itemsModels = List<CardItem>.empty(growable: true);
   GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(5.0),
+      padding:  EdgeInsets.all(5.0),
       child: Expanded(
         child: Column(
             children:<Widget> [
@@ -45,7 +46,8 @@ class _BestSellerWidgetState extends State<BestSellerWidget> {
           ],
         ),
       ),
-      SizedBox(
+      Padding(
+        padding: EdgeInsets.all(1),
         child: StreamBuilder(
                 stream: FirebaseDatabase.instance.ref().child('Furniture').onValue,
                 builder: (BuildContext context, AsyncSnapshot<DatabaseEvent> snapshot) {
@@ -86,6 +88,7 @@ class _BestSellerWidgetState extends State<BestSellerWidget> {
 
                               child: Column(
                                 children: [
+
                                   Hero(
                                       tag:'item',
                                       child: Image(image: AssetImage('${itemsModels[index].Img}',),width: 190,height: 190,)),

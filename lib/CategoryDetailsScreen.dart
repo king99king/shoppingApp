@@ -20,6 +20,7 @@ class CategoryDetailsScreen extends StatefulWidget {
 class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   List<CardItem> itemsModels = List<CardItem>.empty(growable: true);
   List<FavoriteItems> favoriteItems = List<FavoriteItems>.empty(growable: true);
+  List<CartItem> cartItems = List<CartItem>.empty(growable: true);
   GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
   @override
   Widget build(BuildContext context) {
@@ -47,7 +48,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) =>const CartScreen()));
+                              builder: (context) => const CartScreen()));
                     },
                     child: Stack(
                       children: [
@@ -64,13 +65,40 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
                             size: 30,
                           ),
                         ),
-                        Align(
-                          child: Container(
-                              padding: EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                  color: Colors.red, shape: BoxShape.circle),
-                              child: Text("0")),
-                          alignment: Alignment.topRight,
+                        StreamBuilder(
+                            stream: FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID').onValue,
+                            builder: (BuildContext context,
+                                AsyncSnapshot<DatabaseEvent> snapshot) {
+                              var numberItemInCart = 0;
+                              if (snapshot.hasData) {
+                                Map<dynamic, dynamic> map = (snapshot.data!.snapshot.value ??{}) as Map<dynamic, dynamic>;
+                                cartItems.clear();
+                                if (map.isNotEmpty) {map.forEach((key, value) {var cartItem = CartItem.fromJson(jsonDecode(jsonEncode(value)));
+                                cartItem.key = key;
+                                cartItems.add(cartItem);
+                                });
+                                numberItemInCart = cartItems
+                                    .map<int>((m) => m.quantity)
+                                    .reduce((s1, s2) => s1 + s2);
+                                }
+                                return Align(
+                                    alignment:Alignment.topRight,
+                                    child:Container(
+                                        padding:EdgeInsets.all(5),
+                                        decoration:BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle
+                                        ),
+                                        child: Text(numberItemInCart > 9 ? 9.toString() + "+" : numberItemInCart.toString(),style: TextStyle(
+                                            fontWeight: FontWeight.bold
+                                        ),)));
+                              }else{
+                                return  Text("0",style: TextStyle(
+                                    fontWeight: FontWeight.bold
+                                ));
+                              }
+
+                            }
                         ),
                       ],
                     ),
@@ -95,46 +123,64 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
                   ),
                 ],
               )),
-
               SizedBox(
                 height: 15,
               ),
               Container(
-                child:StreamBuilder(
-                stream: FirebaseDatabase.instance.ref().child('Furniture').onValue,
-                builder: (BuildContext context, AsyncSnapshot<DatabaseEvent> snapshot) {
-                if (snapshot.hasData) {
-                var map =
-                snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
-                itemsModels.clear();
-                map.forEach((key, value) {
-                var itemsModel =
-                CardItem.fromJson(jsonDecode(jsonEncode(value)));
-                itemsModel.key = key;
-                itemsModels.add(itemsModel);
-                });
-              return  Expanded(
-                  child: GridView(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 2 / 3,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                    ),
-                    children: itemsModels.where(
-                            (element) => element.category == widget.Cat1.name)
-                        .map((e) {
-                      return CategoryItems( Img: '${e.Img}', Place: '${e.Place}',Name: '${e.Name}', Discount:e.discount, Price: '${e.Price}', Index: e,numItems: e.numItemsSold,scaffoldkey: _scaffoldkey,items:e,context: context,Key1: e.key, lis: itemsModels,tt: favoriteItems,);
-                    }).toList(),
-                  ),
-                );}else{
-                  return  Center(
-                    child: CircularProgressIndicator(
-                      color: Colors.red,
-                    ),
-                  );
-                }
-                }),
+                child: StreamBuilder(
+                    stream: FirebaseDatabase.instance
+                        .ref()
+                        .child('Furniture')
+                        .onValue,
+                    builder: (BuildContext context,
+                        AsyncSnapshot<DatabaseEvent> snapshot) {
+                      if (snapshot.hasData) {
+                        var map = snapshot.data!.snapshot.value
+                            as Map<dynamic, dynamic>;
+                        itemsModels.clear();
+                        map.forEach((key, value) {
+                          var itemsModel =
+                              CardItem.fromJson(jsonDecode(jsonEncode(value)));
+                          itemsModel.key = key;
+                          itemsModels.add(itemsModel);
+                        });
+                        return Expanded(
+                          child: GridView(
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 2 / 3,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                            ),
+                            children: itemsModels
+                                .where((element) =>
+                                    element.category == widget.Cat1.name)
+                                .map((e) {
+                              return CategoryItems(
+                                Img: '${e.Img}',
+                                Place: '${e.Place}',
+                                Name: '${e.Name}',
+                                Discount: e.discount,
+                                Price: '${e.Price}',
+                                numItems: e.numItemsSold,
+                                scaffoldkey: _scaffoldkey,
+                                items: e,
+                                context: context,
+                                Key1: e.key,
+                                lis: favoriteItems,
+                              );
+                            }).toList(),
+                          ),
+                        );
+                      } else {
+                        return Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.red,
+                          ),
+                        );
+                      }
+                    }),
               )
             ],
           ),
@@ -145,7 +191,20 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
 }
 
 class CategoryItems extends StatefulWidget {
-  const CategoryItems({Key? key, required this.Img, required this.Place, required this.Name, required this.Price, required this.Discount, this.Index, required this.numItems, this.scaffoldkey, this.items, this.context, required this.Key1, required this.lis, this.tt}) : super(key: key);
+  const CategoryItems(
+      {Key? key,
+      required this.Img,
+      required this.Place,
+      required this.Name,
+      required this.Price,
+      required this.Discount,
+      required this.numItems,
+      this.scaffoldkey,
+      this.items,
+      this.context,
+      required this.Key1,
+      required this.lis,})
+      : super(key: key);
   final String Key1;
   final String Img;
   final String Place;
@@ -153,26 +212,29 @@ class CategoryItems extends StatefulWidget {
   final String Price;
   final int numItems;
   final bool Discount;
-  final  Index;
   final scaffoldkey;
   final items;
   final context;
   final List lis;
-  final tt;
   @override
   _CategoryItemsState createState() => _CategoryItemsState();
 }
 
 class _CategoryItemsState extends State<CategoryItems> {
-  Color fav=Colors.white;
+  Color fav = Colors.white;
+  List<FavoriteItems> favoriteItems = List<FavoriteItems>.empty(growable: true);
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: (){
-        Navigator.push(context, MaterialPageRoute(
-          builder: (context)=>DetailsScreen(
-            Item: widget.Index,
-          ),),);
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailsScreen(
+              Item: widget.items,
+            ),
+          ),
+        );
       },
       child: Container(
         padding: EdgeInsets.all(5),
@@ -186,17 +248,21 @@ class _CategoryItemsState extends State<CategoryItems> {
           children: <Widget>[
             Align(
               child: InkWell(
-                  onTap: (){
-                    setState(() {
-                      if(fav==Colors.white && !(widget.lis.contains(widget.Key1)) ){
-                        fav=Colors.red;
-                        addToFavorite(widget.scaffoldkey, widget.tt[1], widget.context);
-                      }else{
-                        fav=Colors.white;
+                  onTap: () {
+                      //=========================here
+                      if (fav == Colors.white && !(widget.lis.contains(widget.Key1))) {
+                        setState(() {
+                          fav = Colors.red;
+                        });
+                        addToFavorite(widget.scaffoldkey, widget.items, context);
+                      } else if(fav == Colors.red && (widget.lis.contains(widget.Key1))){
+                        setState(() {
+                          fav = Colors.white;
+                        });
+                        deleteFromFavorite(widget.scaffoldkey, widget.items, context);
 
                       }
 
-                    });
                   },
                   child: Icon(
                     Icons.favorite,
@@ -205,7 +271,7 @@ class _CategoryItemsState extends State<CategoryItems> {
                   )),
               alignment: Alignment.topRight,
             ),
-             Image(
+            Image(
               image: AssetImage(
                 widget.Img,
               ),
@@ -262,7 +328,7 @@ class _CategoryItemsState extends State<CategoryItems> {
                         ),
                       ),
                       InkWell(
-                        onTap: (){
+                        onTap: () {
                           addToCart(widget.scaffoldkey, widget.items, widget.context);
                         },
                         child: ClipRRect(

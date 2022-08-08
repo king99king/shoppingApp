@@ -9,27 +9,26 @@ import 'package:shoppingapp/Data/AppData.dart';
 
 import 'AddToCartFirebase.dart';
 
-class DetailsScreen extends StatefulWidget {
+class DetailsScreenFavorite extends StatefulWidget {
 
-  const DetailsScreen({Key? key, required this.Item}) : super(key: key);
-  final CardItem Item;
+  const DetailsScreenFavorite({Key? key, required this.Item1}) : super(key: key);
+  final FavoriteItems Item1;
+  //final CardItem Item;
   @override
-  State<DetailsScreen> createState() => _DetailsScreenState();
+  State<DetailsScreenFavorite> createState() => _DetailsScreenFavoriteState();
 }
 
-class _DetailsScreenState extends State<DetailsScreen> {
+class _DetailsScreenFavoriteState extends State<DetailsScreenFavorite> {
   var num=1;
-  List<CartItem> cartItems = List<CartItem>.empty(growable: true);
   List<CardItem> itemsModels = List<CardItem>.empty(growable: true);
+  List<CartItem> cartItems = List<CartItem>.empty(growable: true);
   GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
-  Color fav = Colors.grey;
-  List<FavoriteItems> favoriteItems = List<FavoriteItems>.empty(growable: true);
   @override
   Widget build(BuildContext context) {
     return Scaffold (
 
       body: SafeArea (
-          child:  Padding(
+        child:  Padding(
           padding: const EdgeInsets.all(10.0),
           child: Container(
             child: Column(
@@ -120,8 +119,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   children: [
                     Hero(
                         tag: 'item',
-                        child: Image(image: AssetImage(widget.Item.Img,),width: 250,height: 250,)),
-                    Image(image: AssetImage(widget.Item.Img,),width: 250,height: 250,),
+                        child: Image(image: AssetImage(widget.Item1.Img,),width: 250,height: 250,)),
+                    Image(image: AssetImage(widget.Item1.Img,),width: 250,height: 250,),
                   ],
 
                 ),
@@ -191,7 +190,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children:[
 
-                      Text(widget.Item.Place,style:  GoogleFonts.tajawal(
+                      Text(widget.Item1.Place,style:  GoogleFonts.tajawal(
                         color: Colors.grey[900],
                         fontSize: 20,
 
@@ -199,36 +198,14 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: <Widget>[
-                          Text(widget.Item.Name,
+                          Text(widget.Item1.Name,
                             style:  GoogleFonts.tajawal(
                               color: Colors.black,
                               fontWeight: FontWeight.bold,
                               fontSize: 30,height: 1.5,
                             ),),
-                          InkWell(
-                              onTap: () {
-                                //=========================here
-                                if (fav == Colors.grey && !(favoriteItems.contains(widget.Item.key))) {
-                                  setState(() {
-                                    fav = Colors.red;
-                                  });
-                                  addToFavorite(_scaffoldkey, widget.Item, context);
-                                } else if(fav == Colors.red && (favoriteItems.contains(widget.Item.key))){
-                                  setState(() {
-                                    fav = Colors.grey;
-                                  });
-                                 deleteFromFavorite(_scaffoldkey,favoriteItems.iterator.current, context);
 
-                                }
-
-                              },
-                              child: Icon(
-                                Icons.favorite,
-                                color: fav,
-                                size: 30,
-                              )),
                         ],
-
                       ),
                       Row(
 
@@ -240,7 +217,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                       ),
                       Padding(
                         padding: const EdgeInsets.fromLTRB(0,15,0,10),
-                        child: Text(widget.Item.Detailes,
+                        child: Text(widget.Item1.Detailes,
                           style:  GoogleFonts.tajawal(
                             color: Colors.grey[700],
                             fontSize: 18,
@@ -259,7 +236,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                             ),
                               children: <InlineSpan>[
                                 TextSpan(
-                                    text: widget.Item.Price,style: GoogleFonts.tajawal(
+                                    text: widget.Item1.Price,style: GoogleFonts.tajawal(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black,
@@ -288,7 +265,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 ElevatedButton(
 
                   onPressed: (){
-                    addToCart(_scaffoldkey,widget.Item, context);
+                    addToCartFromFavorite(_scaffoldkey,widget.Item1, context);
                   },
                   child: Center(
                     child: Text("Add to Cart",style:  GoogleFonts.tajawal(fontSize: 20,fontWeight: FontWeight.w600),),

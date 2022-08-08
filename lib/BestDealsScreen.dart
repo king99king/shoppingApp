@@ -21,6 +21,7 @@ class BestDealsScreen extends StatefulWidget {
 class _BestDealsScreenState extends State<BestDealsScreen> {
   List<CategoryListLis> categoryModels = List<CategoryListLis>.empty(growable: true);
   List<CardItem> itemsModels = List<CardItem>.empty(growable: true);
+  List<CartItem> cartItems = List<CartItem>.empty(growable: true);
   GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
   String dropdownValue = 'Chair';
 
@@ -66,13 +67,40 @@ class _BestDealsScreenState extends State<BestDealsScreen> {
                             size: 30,
                           ),
                         ),
-                        Align(
-                          child: Container(
-                              padding: EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                  color: Colors.red, shape: BoxShape.circle),
-                              child: Text("0")),
-                          alignment: Alignment.topRight,
+                        StreamBuilder(
+                            stream: FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID').onValue,
+                            builder: (BuildContext context,
+                                AsyncSnapshot<DatabaseEvent> snapshot) {
+                              var numberItemInCart = 0;
+                              if (snapshot.hasData) {
+                                Map<dynamic, dynamic> map = (snapshot.data!.snapshot.value ??{}) as Map<dynamic, dynamic>;
+                                cartItems.clear();
+                                if (map.isNotEmpty) {map.forEach((key, value) {var cartItem = CartItem.fromJson(jsonDecode(jsonEncode(value)));
+                                cartItem.key = key;
+                                cartItems.add(cartItem);
+                                });
+                                numberItemInCart = cartItems
+                                    .map<int>((m) => m.quantity)
+                                    .reduce((s1, s2) => s1 + s2);
+                                }
+                                return Align(
+                                    alignment:Alignment.topRight,
+                                    child:Container(
+                                        padding:EdgeInsets.all(5),
+                                        decoration:BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle
+                                        ),
+                                        child: Text(numberItemInCart > 9 ? 9.toString() + "+" : numberItemInCart.toString(),style: TextStyle(
+                                            fontWeight: FontWeight.bold
+                                        ),)));
+                              }else{
+                                return  Text("0",style: TextStyle(
+                                    fontWeight: FontWeight.bold
+                                ));
+                              }
+
+                            }
                         ),
                       ],
                     ),

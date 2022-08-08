@@ -48,14 +48,15 @@ class _CartWidgetState extends State<CartWidget> {
             ),
           ),
 
-             StreamBuilder(stream: FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID').onValue,
-                builder: (BuildContext context,
+             StreamBuilder(
+                 stream: FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID').onValue,
+                 builder: (BuildContext context,
                     AsyncSnapshot<DatabaseEvent> snapshot) {
                   var numberItemInCart = 0;
                   if (snapshot.hasData) {
                     Map<dynamic, dynamic> map = (snapshot.data!.snapshot.value ??{}) as Map<dynamic, dynamic>;
                     cartItems.clear();
-                    if (map != null) {map.forEach((key, value) {var cartItem = CartItem.fromJson(jsonDecode(jsonEncode(value)));
+                    if (map.isNotEmpty) {map.forEach((key, value) {var cartItem = CartItem.fromJson(jsonDecode(jsonEncode(value)));
                         cartItem.key = key;
                         cartItems.add(cartItem);
                       });
@@ -75,17 +76,9 @@ class _CartWidgetState extends State<CartWidget> {
                             fontWeight: FontWeight.bold
                         ),)));
                   }else{
-                    return  Align(
-                    alignment:Alignment.topRight,
-                    child: Container(
-                        padding:EdgeInsets.all(5),
-                        decoration:BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle
-                        ),
-                        child: Text("0",style: TextStyle(
+                    return  Text("0",style: TextStyle(
                             fontWeight: FontWeight.bold
-                        ),)));
+                        ));
                   }
 
                 }

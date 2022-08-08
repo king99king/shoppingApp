@@ -1,3 +1,5 @@
+
+
 class AppData {
   static String? UserName = "userName";
 }
@@ -102,36 +104,36 @@ class CardItem {
 
 class CartItem {
   late String key;
-  late String Img;
-  late String Name;
-  late String Price;
+  late String image;
+  late String name;
+  late String price;
   late int quantity;
   late double totalPrice;
 
   CartItem(
       {required this.key,
-        required this.Img,
-        required this.Name,
-        required this.Price,
+        required this.image,
+        required this.name,
+        required this.price,
         required this.quantity,
         required this.totalPrice,
 
       });
 
-  CartItem.fromJson(Map<dynamic, dynamic> json) {
+  CartItem.fromJson(Map<String, dynamic> json) {
     key = json['key'].toString();
-    Img = json['Img'].toString();
-    Name = json['Name'].toString();
-    Price = json['Price'].toString();
+    image = json['image'].toString();
+    name = json['name'].toString();
+    price = json['price'].toString();
     quantity=json['quantity'] as int;
     totalPrice=double.parse(json['totalPrice'].toString());
   }
   Map<String, dynamic> toJson() {
-    final Map<String, dynamic> data = new Map<String, dynamic>();
+    final Map<String, dynamic> data = Map<String, dynamic>();
     data['key'] = this.key;
-    data['Img'] = this.Img;
-    data['Name'] = this.Name;
-    data['Price'] = this.Price;
+    data['image'] = this.image;
+    data['name'] = this.name;
+    data['price'] = this.price;
     data['quantity']=this.quantity;
     data['totalPrice']=this.totalPrice;
     return data;
@@ -147,7 +149,11 @@ class FavoriteItems {
   late String Place;
   late String Name;
   late String Price;
-  late int numItemsSold;
+  late String Detailes;
+  late String category;
+  late int rate;
+  //late int? numItemsSold;
+//  late bool discount;
 
   FavoriteItems(
       {required this.key,
@@ -155,15 +161,16 @@ class FavoriteItems {
         required this.Place,
         required this.Name,
         required this.Price,
-        required this.numItemsSold,});
+        required this.Detailes
+        });
 
   FavoriteItems.fromJson(Map<dynamic, dynamic> json) {
     key = json['key'].toString();
-    Img = json['Img'];
-    Place = json['Place'];
-    Name = json['Name'];
-    numItemsSold = json['numItemsSold'];
-    Price = json['Price'];
+    Img = json['Img'].toString();
+    Place = json['Place'].toString();
+    Name = json['Name'].toString();
+    Detailes = json['Detailes'].toString();
+    Price = json['Price'].toString();
   }
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = new Map<String, dynamic>();
@@ -171,7 +178,7 @@ class FavoriteItems {
     data['Img'] = this.Img;
     data['Place'] = this.Place;
     data['Name'] = this.Name;
-    data['numItemsSold'] = this.numItemsSold;
+    data['Detailes'] = this.Detailes;
     data['Price'] = this.Price;
     return data;
   }

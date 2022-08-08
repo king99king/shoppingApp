@@ -11,13 +11,12 @@ class RowSearch extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(5.0),
       child: Container(
-
             child:
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               searchBar(),
-              CartWidget(),
+          CartWidget(),
               FavoriteWidget(),
             ],
           ),)
