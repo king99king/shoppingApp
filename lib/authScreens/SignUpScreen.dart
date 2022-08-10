@@ -1,9 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shoppingapp/Data/AppData.dart';
 import 'package:shoppingapp/HomeScreen.dart';
 import 'package:shoppingapp/authScreens/SignInScreen.dart';
@@ -25,13 +27,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
   late String _passwordController = TextEditingController() as String;
   late String _passwordConfController = TextEditingController() as String;
   //================================
-  final TextEditingController controller = TextEditingController();
+  final TextEditingController PhoneController = TextEditingController();
   String initialCountry = 'OM';
   PhoneNumber number = PhoneNumber(isoCode: 'OM');
   //==================================
   String get username => _usernameController.text.trim();
   String get email => _emailController.trim();
   String get password => _passwordController.trim();
+  String get PhoneNumber1 => PhoneController.text.trim();
+
+  // String? UserId='';
+  // final User? user = FirebaseAuth.instance.currentUser;
+  // Future _getUserId() async{
+  //
+  //   setState(() {
+  //     UserId=user?.uid;
+  //   });
+  // }
+
+
 
   void _trySubmitForm() {
 
@@ -124,7 +138,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ignoreBlank: false,
                         autoValidateMode: AutovalidateMode.disabled,
                         initialValue: number,
-                        textFieldController: controller,
+                        textFieldController: PhoneController,
                         formatInput: false,
                         selectorConfig: SelectorConfig(
                           selectorType: PhoneInputSelectorType.DROPDOWN,
@@ -282,6 +296,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           setState(() {
                             showSoinner=true;
                           });
+                          SharedPreferences preferences =await SharedPreferences.getInstance();
+                          preferences.setString('email', email);
+
+                          final user1 = await FirebaseAuth.instance.currentUser!;
+
+                          final user = <String, dynamic>{
+                            "email of user": email,
+                            "password ": password,
+                            "UserName": username,
+                           "PhoneNumber": PhoneNumber1,
+                            "userId":user1.uid
+
+                          };
+                          // Add a new document with a generated ID
+                          FirebaseFirestore.instance.collection("users").add(user).then((DocumentReference doc) =>
+                              print('DocumentSnapshot added with ID: ${doc.id}'));
+
+
+
+
+
+
+
+
+
+
                            Navigator.pushReplacement(
                                context, MaterialPageRoute(builder: (context) => HomeScreen()));
                         }

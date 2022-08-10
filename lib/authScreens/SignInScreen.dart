@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shoppingapp/HomeScreen.dart';
 import 'package:shoppingapp/authScreens/SignUpScreen.dart';
 import 'package:shoppingapp/authScreens/WelcomeScreen.dart';
@@ -152,6 +153,8 @@ class _SignInScreenState extends State<SignInScreen> {
                           setState(() {
                             showSoinner=true;
                           });
+                         SharedPreferences preferences =await SharedPreferences.getInstance();
+                          preferences.setString('email', email);
                           Navigator.pushReplacement(
                               context, MaterialPageRoute(builder: (context) => HomeScreen()));
                         }

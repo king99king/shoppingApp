@@ -204,7 +204,6 @@ class _DetailsScreenFavoriteState extends State<DetailsScreenFavorite> {
                               fontWeight: FontWeight.bold,
                               fontSize: 30,height: 1.5,
                             ),),
-
                         ],
                       ),
                       Row(
