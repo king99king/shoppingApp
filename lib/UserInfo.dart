@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shoppingapp/Data/AppData.dart';
@@ -15,95 +20,143 @@ class UserInfoScreen extends StatefulWidget {
 }
 
 class _UserInfoScreenState extends State<UserInfoScreen> {
-  final String documentId = '1NtyBtfLLQAucO7gLjES';
-  // // late dynamic data;
-  // //
-  // final User? user = FirebaseAuth.instance.currentUser;
-  // Future<void> getData() async {
-  //
-  //   final  document =   FirebaseFirestore.instance.collection("users").doc(user!.email).get();
-  //      print(document);
-  // }
-  // CollectionReference users2 = FirebaseFirestore.instance.collection('users');
-  // DocumentSnapshot documentSnapshot=DocumentSnapshot.getData();
-  // Future<String> get_data(DocumentReference doc_ref) async {
-  //   DocumentSnapshot docSnap = await doc_ref.get();
-  //   var doc_id2 = docSnap.reference;
-  //   return doc_id2;
-  // }
-  // @override
-  // void initState() {
-  //
-  //   super.initState();
-  //   getData();
-  //   print(users2.path);
-  //   print(get_data) ;
-  // }
 
-
-//To retrieve the string
-
-
-  // Future getEmail()async{
-  //   SharedPreferences preferences =await SharedPreferences.getInstance();
-  //   setState(() {
-  //     email =preferences.getString('email');
-  //   });
-  // }
-
-  //  Future _getUserInfo() async{
-  //    FocusScope.of(context).unfocus();
-  //    final user = await FirebaseAuth.instance.currentUser!;
-  //    final userData = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-  //    setState(() {
-  //      userData[user.uid]['email of user']= email;
-  //    });
-  //
-  //  }
-  String? UserId='';
+  String? UserId = '';
   final User? user = FirebaseAuth.instance.currentUser;
-  Future _getUserId() async{
-
+  Future _getUserId() async {
     setState(() {
-      UserId=user?.uid;
+      UserId = user?.uid;
     });
   }
 
-  //
-  //  // final chatDocs = snapshot.data?.docs;
-  //  // chatDocs![index]['text'],
-  //  // chatDocs[index]['username'],
-  //  // chatDocs[index]['userId'] == uid,
-  //  // key: ValueKey(chatDocs[index].id),
-  //
+
+
+  StreamSubscription? connection;
+  bool isoffline = false;
   @override
-  void initState(){
-     super.initState();
-     _getUserId();
+  void initState() {
+    _getUserId();
      print(user?.uid);
-   }
+    connection = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      // whenevery connection status is changed.
+      if(result == ConnectivityResult.none){
+        //there is no any connection
+        setState(() {
+          isoffline = true;
+        });
+      }else if(result == ConnectivityResult.mobile){
+        //connection is mobile data network
+        setState(() {
+          isoffline = false;
+        });
+      }else if(result == ConnectivityResult.wifi){
+        //connection is from wifi
+        setState(() {
+          isoffline = false;
+        });
+      }else if(result == ConnectivityResult.ethernet){
+        //connection is from wired connection
+        setState(() {
+          isoffline = false;
+        });
+      }else if(result == ConnectivityResult.bluetooth){
+        //connection is from bluetooth threatening
+        setState(() {
+          isoffline = false;
+        });
+      }
+    });
+    super.initState();
+  }
+
+
+  @override
+  void dispose() {
+    connection!.cancel();
+    super.dispose();
+  }
+
   // final User? user = FirebaseAuth.instance.currentUser;
   @override
   Widget build(BuildContext context) {
     CollectionReference users = FirebaseFirestore.instance.collection('users');
     return Scaffold(
       body: SafeArea(
-          child: FutureBuilder<DocumentSnapshot>(
-        future: users.doc(documentId).get(),
+          child: isoffline? Center(child:
+          Text("You are offline, \n Please connect your phone",style: TextStyle(
+            fontSize: 30,
+
+          ),
+            textAlign: TextAlign.center,),):FutureBuilder<DocumentSnapshot>(
+        future: users.doc(user?.uid).get(),
         builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
+          FirebaseFirestore.instance.collection("users").doc(user?.email).get();
+
           if (snapshot.hasError) {
-            return Text("Something went wrong");
+            return const Center(child: Text("Something went wrong"));
           }
 
           if (snapshot.hasData && !snapshot.data!.exists) {
-            return Text("Document does not exist");
+            return  Center(child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: IconButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      size: 40,
+                    ),
+                  ),
+                ),
+
+                Text("you are not SignIn 📧"),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await FirebaseAuth.instance.signOut();
+                      Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const WelcomeScreen()),(route)=>false);
+                    },
+                    style: ButtonStyle(
+                        shape: MaterialStateProperty.all<
+                            RoundedRectangleBorder>(RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18.0),
+                          // side: BorderSide(color: Colors.red)
+                        )),
+                        padding: MaterialStateProperty.resolveWith(
+                                (states) => const EdgeInsets.all(22)),
+                        backgroundColor: MaterialStateProperty.resolveWith(
+                              (states) => Colors.blueGrey[900],
+                        )),
+                    child: Center(
+                      child: Center(
+                        child: Text(
+                          "SignIn",
+                          style: GoogleFonts.tajawal(
+                              fontSize: 20, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+              ],
+            ));
           }
 
           if (snapshot.connectionState == ConnectionState.done) {
-            Map<String, dynamic> data = snapshot.data!.data() as Map<String, dynamic>;
+            Map<String, dynamic> data =
+                snapshot.data!.data() as Map<String, dynamic>;
             return //Text("Full Name: ${data['UserName']} ${data['UserName']}");
                 Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 image: DecorationImage(
                   image: AssetImage("assets/images/fbg.png"),
                   fit: BoxFit.cover,
@@ -121,7 +174,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                           onPressed: () {
                             Navigator.pop(context);
                           },
-                          icon: Icon(
+                          icon: const Icon(
                             Icons.arrow_back,
                             size: 40,
                           ),
@@ -129,18 +182,15 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                       ],
                     ),
                     Center(
-                      child: Hero(
-                        tag: 'profile',
-                        child: Container(
-                          height: 120,
-                          width: 120,
-                          decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.blueGrey[900],
-                              image: DecorationImage(
-                                  image:
-                                      AssetImage("assets/images/profile.png"))),
-                        ),
+                      child: Container(
+                        height: 120,
+                        width: 120,
+                        decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.blueGrey[900],
+                            image: const DecorationImage(
+                                image:
+                                    AssetImage("assets/images/profile.png"))),
                       ),
                     ),
                     Center(
@@ -216,7 +266,7 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                         ),
                         child: Center(
                             child: Text(
-                              data['PhoneNumber'],
+                          data['PhoneNumber'],
                           style: GoogleFonts.tajawal(
                             height: 1.8,
                             color: Colors.black,
@@ -239,15 +289,12 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         TextButton(
-                            onPressed: () {},
-                            child: Text(
-                              "Get Location",
-                              style: GoogleFonts.tajawal(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
+                            onPressed: () async {
+                              Position position = await _determinePosition();
+                              _getAddress(position);
+                               //getUserDoc();
+                              setState(() {});
+                            },
                             style: ButtonStyle(
                                 shape: MaterialStateProperty.all<
                                         RoundedRectangleBorder>(
@@ -256,28 +303,36 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                                   // side: BorderSide(color: Colors.red)
                                 )),
                                 padding: MaterialStateProperty.resolveWith(
-                                    (states) => EdgeInsets.all(22)),
+                                    (states) => const EdgeInsets.all(22)),
                                 backgroundColor:
                                     MaterialStateProperty.resolveWith(
                                   (states) => Colors.blueGrey[900],
-                                ))),
+                                )),
+                            child: Text(
+                              "Get Location",
+                              style: GoogleFonts.tajawal(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            )),
                         Container(
                           width: 220,
-                          padding: EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Center(
                               child: Text(
-                            "Street34-home",
+                            data['PersonPlace'] ?? "get your location",
                             style: GoogleFonts.tajawal(
                               height: 1.8,
                               color: Colors.black,
                               fontWeight: FontWeight.w600,
-                              fontSize: 25,
+                              fontSize: 15,
                             ),
-                            overflow: TextOverflow.ellipsis,
+                            overflow: TextOverflow.visible,
                             maxLines: 1,
                           )),
                         ),
@@ -286,20 +341,9 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: ElevatedButton(
-                        onPressed: () {
-                          FirebaseAuth.instance.signOut();
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => WelcomeScreen()));
+                        onPressed: () async {
+                        showAlertDialogLogOut(context);
                         },
-                        child: Center(
-                          child: Text(
-                            "Logout",
-                            style: GoogleFonts.tajawal(
-                                fontSize: 20, fontWeight: FontWeight.w600),
-                          ),
-                        ),
                         style: ButtonStyle(
                             shape: MaterialStateProperty.all<
                                 RoundedRectangleBorder>(RoundedRectangleBorder(
@@ -307,10 +351,19 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
                               // side: BorderSide(color: Colors.red)
                             )),
                             padding: MaterialStateProperty.resolveWith(
-                                (states) => EdgeInsets.all(22)),
+                                (states) => const EdgeInsets.all(22)),
                             backgroundColor: MaterialStateProperty.resolveWith(
                               (states) => Colors.blueGrey[900],
                             )),
+                        child: Center(
+                          child: Center(
+                            child: Text(
+                              "Logout",
+                              style: GoogleFonts.tajawal(
+                                  fontSize: 20, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -319,9 +372,120 @@ class _UserInfoScreenState extends State<UserInfoScreen> {
             );
           }
 
-          return Text("loading");
+          return  Center(
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        size: 40,
+                      ),
+                    ),
+                  ],
+                ),
+                Center(child: CircularProgressIndicator()),
+              ],
+            ),
+          );
         },
       )),
     );
   }
+}
+
+Future<Position> _determinePosition() async {
+  bool serviceEnabled;
+  LocationPermission permission;
+
+  serviceEnabled = await Geolocator.isLocationServiceEnabled();
+  if (!serviceEnabled) {
+    await Geolocator.openLocationSettings();
+    return Future.error('Location services are disabled.');
+  }
+
+  permission = await Geolocator.checkPermission();
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied) {
+      return Future.error('Location permissions are denied');
+    }
+  }
+
+  if (permission == LocationPermission.deniedForever) {
+    return Future.error(
+        'Location permissions are permanently denied, we cannot request permissions.');
+  }
+  return await Geolocator.getCurrentPosition();
+}
+
+final User? user = FirebaseAuth.instance.currentUser;
+Future<void> _getAddress(Position position) async {
+  List<Placemark> placemark = await placemarkFromCoordinates(position.latitude, position.longitude);
+
+  Placemark place = placemark[0];
+  print(place.street);
+  print(place.locality);
+
+
+  final userLocation = <String, dynamic>{
+    "PersonPlace": "${place.locality}-${place.street}",
+    "LocationOnMap":"https://www.google.com/maps/dir/${position.latitude},${position.longitude}"
+  };
+  FirebaseFirestore.instance.collection("users").doc(user?.uid).update(userLocation);
+}
+
+// Future<void> getUserDoc() async {
+//   final FirebaseAuth _auth = FirebaseAuth.instance;
+//   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+//
+//   User? user = await _auth.currentUser;
+//   DocumentReference ref = _firestore.collection('users').doc(user?.uid);
+//   return ref.set({'userId': user?.uid});
+// }
+
+void showAlertDialogLogOut(BuildContext context) {
+
+  // set up the button
+  Widget okButton = TextButton(
+    child: const Text("Yes"),
+    onPressed: ()async {
+
+     await  FirebaseAuth.instance.signOut();
+  Navigator.pushAndRemoveUntil(context,  MaterialPageRoute(
+      builder: (context) => const WelcomeScreen()), (route) => false);}
+
+);
+  Widget noButton = TextButton(
+    child: const Text("No"),
+    onPressed: ()=>  Navigator.pop(context),
+
+  );
+
+  // set up the AlertDialog
+  AlertDialog alert =  AlertDialog(
+
+
+    title: const Text("Logout!"),
+    content: Text("Are you sure ",style: GoogleFonts.tajawal(
+      fontSize: 25,
+    ),textAlign: TextAlign.center,),
+    actions: [
+      noButton,
+      okButton,
+    ],
+  );
+
+  // show the dialog
+  showDialog(
+    barrierDismissible: false,
+    context: context,
+    builder: (BuildContext context) {
+      return alert;
+    },
+  );
 }

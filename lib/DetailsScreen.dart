@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_slideshow/flutter_image_slideshow.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,11 +19,22 @@ class DetailsScreen extends StatefulWidget {
   State<DetailsScreen> createState() => _DetailsScreenState();
 }
 
+
+Future<String>  downloadUrl(String imageName) async{
+
+  String downloadURL=await FirebaseStorage.instance.ref(imageName).getDownloadURL();
+
+  return downloadURL;
+}
+
+
+
 class _DetailsScreenState extends State<DetailsScreen> {
   var num=1;
   List<CartItem> cartItems = List<CartItem>.empty(growable: true);
   List<CardItem> itemsModels = List<CardItem>.empty(growable: true);
   GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
+  final User? user = FirebaseAuth.instance.currentUser;
   Color fav = Colors.grey;
   List<FavoriteItems> favoriteItems = List<FavoriteItems>.empty(growable: true);
   @override
@@ -72,7 +85,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                             ),
                           ),
                           StreamBuilder(
-                              stream: FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID').onValue,
+                              stream: FirebaseDatabase.instance.ref().child('${user?.uid ?? "unknownUser"}').child('Cart').onValue,
                               builder: (BuildContext context,
                                   AsyncSnapshot<DatabaseEvent> snapshot) {
                                 var numberItemInCart = 0;
@@ -120,8 +133,42 @@ class _DetailsScreenState extends State<DetailsScreen> {
                   children: [
                     Hero(
                         tag: 'item',
-                        child: Image(image: AssetImage(widget.Item.Img,),width: 250,height: 250,)),
-                    Image(image: AssetImage(widget.Item.Img,),width: 250,height: 250,),
+                        child:  FutureBuilder(
+                          future: downloadUrl(widget.Item.Img.trim()),
+                          builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                            if(snapshot.connectionState == ConnectionState.done && snapshot.hasData){
+                              return Image(
+                                image: NetworkImage(
+                                  ' ${snapshot.data}'.trim(),
+
+                                ),
+                                width: 130,
+                                height: 130,
+                              );
+                            }else if(snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData){
+                              return Center(child: CircularProgressIndicator(),);
+                            }
+                            return Container();
+                          },
+                        ), ),
+                    FutureBuilder(
+                      future: downloadUrl(widget.Item.Img.trim()),
+                      builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                        if(snapshot.connectionState == ConnectionState.done && snapshot.hasData){
+                          return Image(
+                            image: NetworkImage(
+                              ' ${snapshot.data}'.trim(),
+
+                            ),
+                            width: 130,
+                            height: 130,
+                          );
+                        }else if(snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData){
+                          return Center(child: CircularProgressIndicator(),);
+                        }
+                        return Container();
+                      },
+                    ),
                   ],
 
                 ),
@@ -191,7 +238,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children:[
 
-                      Text(widget.Item.Place,style:  GoogleFonts.tajawal(
+                      Text("${widget.Item.Place}",style:  GoogleFonts.tajawal(
                         color: Colors.grey[900],
                         fontSize: 20,
 
@@ -259,7 +306,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
                             ),
                               children: <InlineSpan>[
                                 TextSpan(
-                                    text: widget.Item.Price,style: GoogleFonts.tajawal(
+                                    text: "\$ ${widget.Item.Price}",style: GoogleFonts.tajawal(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black,

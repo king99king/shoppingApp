@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,7 +15,7 @@ class CartWidget extends StatefulWidget {
 }
 
 class _CartWidgetState extends State<CartWidget> {
-
+  final User? user = FirebaseAuth.instance.currentUser;
   List<CartItem> cartItems = List<CartItem>.empty(growable: true);
   @override
   Widget build(BuildContext context) {
@@ -49,7 +50,7 @@ class _CartWidgetState extends State<CartWidget> {
           ),
 
              StreamBuilder(
-                 stream: FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID').onValue,
+                 stream: FirebaseDatabase.instance.ref().child('${user?.uid ?? "unknownUser"}').child('Cart').onValue,
                  builder: (BuildContext context,
                     AsyncSnapshot<DatabaseEvent> snapshot) {
                   var numberItemInCart = 0;

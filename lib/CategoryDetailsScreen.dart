@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shoppingapp/AddToCartFirebase.dart';
@@ -22,6 +24,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   List<FavoriteItems> favoriteItems = List<FavoriteItems>.empty(growable: true);
   List<CartItem> cartItems = List<CartItem>.empty(growable: true);
   GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
+  final User? user = FirebaseAuth.instance.currentUser;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -66,7 +69,7 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
                           ),
                         ),
                         StreamBuilder(
-                            stream: FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID').onValue,
+                            stream: FirebaseDatabase.instance.ref().child('${user?.uid ?? "unknownUser"}').child('Cart').onValue,
                             builder: (BuildContext context,
                                 AsyncSnapshot<DatabaseEvent> snapshot) {
                               var numberItemInCart = 0;
@@ -190,6 +193,13 @@ class _CategoryDetailsScreenState extends State<CategoryDetailsScreen> {
   }
 }
 
+Future<String>  downloadUrl(String imageName) async{
+
+  String downloadURL=await FirebaseStorage.instance.ref(imageName).getDownloadURL();
+
+  return downloadURL;
+}
+
 class CategoryItems extends StatefulWidget {
   const CategoryItems(
       {Key? key,
@@ -271,13 +281,23 @@ class _CategoryItemsState extends State<CategoryItems> {
                   )),
               alignment: Alignment.topRight,
             ),
-            Image(
-              image: AssetImage(
-                widget.Img,
-              ),
-              width: 130,
-              height: 130,
-              fit: BoxFit.fitWidth,
+            FutureBuilder(
+              future: downloadUrl(widget.Img.trim()),
+              builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                if(snapshot.connectionState == ConnectionState.done && snapshot.hasData){
+                  return Image(
+                    image: NetworkImage(
+                      ' ${snapshot.data}'.trim(),
+
+                    ),
+                    width: 130,
+                    height: 130,
+                    fit: BoxFit.fitWidth,                  );
+                }else if(snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData){
+                  return Center(child: CircularProgressIndicator(),);
+                }
+                return Container();
+              },
             ),
             Column(
                 // mainAxisAlignment: MainAxisAlignment.end,
@@ -321,7 +341,7 @@ class _CategoryItemsState extends State<CategoryItems> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
                       Text(
-                        "${widget.Price}",
+                        "Price: \$ ${widget.Price}",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

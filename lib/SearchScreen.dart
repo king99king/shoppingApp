@@ -13,27 +13,55 @@ import 'package:shoppingapp/CartScreen.dart';
 import 'package:shoppingapp/Data/AppData.dart';
 import 'package:shoppingapp/DetailsScreen.dart';
 
-class BestDealsScreen extends StatefulWidget {
-  const BestDealsScreen({Key? key}) : super(key: key);
-
-  @override
-  _BestDealsScreenState createState() => _BestDealsScreenState();
+extension StringCasingExtension on String {
+  String toCapitalized() => length > 0 ?'${this[0].toUpperCase()}${substring(1).toLowerCase()}':'';
+  String toTitleCase() => replaceAll(RegExp(' +'), ' ').split(' ').map((str) => str.toCapitalized()).join(' ');
 }
 
-class _BestDealsScreenState extends State<BestDealsScreen> {
+class searchScreen extends StatefulWidget {
+  const searchScreen({Key? key}) : super(key: key);
+
+  @override
+  _searchScreenState createState() => _searchScreenState();
+}
+
+class _searchScreenState extends State<searchScreen> {
+  late FocusNode myFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+
+    myFocusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    // Clean up the focus node when the Form is disposed.
+    myFocusNode.dispose();
+
+    super.dispose();
+  }
+
+
+
+
+
+
   List<CategoryListLis> categoryModels = List<CategoryListLis>.empty(growable: true);
   List<CardItem> itemsModels = List<CardItem>.empty(growable: true);
   List<CartItem> cartItems = List<CartItem>.empty(growable: true);
   GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
-  String dropdownValue = 'Chair';
   final User? user = FirebaseAuth.instance.currentUser;
-
+  late String _SearchConfController = TextEditingController().text;
+  String get SearchByCategory => _SearchConfController.trim().toTitleCase();
+  String get SearchByName=> _SearchConfController.trim().toTitleCase();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         child: Container(
-          padding: EdgeInsets.fromLTRB(10,5,10,1),
+          padding: const EdgeInsets.fromLTRB(10,5,10,1),
           child: Column(
             children: [
               Row(
@@ -43,7 +71,7 @@ class _BestDealsScreenState extends State<BestDealsScreen> {
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      child: Icon(
+                      child: const Icon(
                         Icons.arrow_back_rounded,
                         size: 40,
                         color: Colors.black,
@@ -58,8 +86,8 @@ class _BestDealsScreenState extends State<BestDealsScreen> {
                     child: Stack(
                       children: [
                         Container(
-                          margin: EdgeInsets.all(10),
-                          padding: EdgeInsets.all(10),
+                          margin: const EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: Colors.blueGrey[100],
                             borderRadius: BorderRadius.circular(10),
@@ -89,16 +117,16 @@ class _BestDealsScreenState extends State<BestDealsScreen> {
                                 return Align(
                                     alignment:Alignment.topRight,
                                     child:Container(
-                                        padding:EdgeInsets.all(5),
-                                        decoration:BoxDecoration(
+                                        padding:const EdgeInsets.all(5),
+                                        decoration:const BoxDecoration(
                                             color: Colors.red,
                                             shape: BoxShape.circle
                                         ),
-                                        child: Text(numberItemInCart > 9 ? 9.toString() + "+" : numberItemInCart.toString(),style: TextStyle(
+                                        child: Text(numberItemInCart > 9 ? 9.toString() + "+" : numberItemInCart.toString(),style: const TextStyle(
                                             fontWeight: FontWeight.bold
                                         ),)));
                               }else{
-                                return  Text("0",style: TextStyle(
+                                return  const Text("0",style: TextStyle(
                                     fontWeight: FontWeight.bold
                                 ));
                               }
@@ -110,85 +138,41 @@ class _BestDealsScreenState extends State<BestDealsScreen> {
                   ),
                 ],
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text("Best Deals On " ,style:GoogleFonts.tajawal(
+           Card(
+            color: Colors.white.withOpacity(0.8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18.0),
+            ),
+            child:  TextField(
+              autofocus: true,
+              focusNode: myFocusNode,
+
+              onChanged: (value) {
+                setState(() {
+                  _SearchConfController = value;
+                });
+
+              },
+
+              cursorColor: Colors.black12,
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.all(10),
+                icon: Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: Icon(
+                    Icons.search_rounded,
+                    size: 30,
                     color: Colors.black,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 30,
-                    height: 1.8,
                   ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.fromLTRB(20, 0, 20, 0),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      color: Colors.blueGrey[900],
-                    ),
-                    child: StreamBuilder(
-                      stream: FirebaseDatabase.instance.ref().child('CatList').onValue,
-                      builder: (BuildContext context, AsyncSnapshot<DatabaseEvent> snapshot) {
-                      if (snapshot.hasData) {
-                      var map =
-                      snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
-                      categoryModels.clear();
-                      map.forEach((key, value) {
-                      var categoryModel =
-                      CategoryListLis.fromJson(jsonDecode(jsonEncode(value)));
-                      categoryModel.key = key;
-                      categoryModels.add(categoryModel);
-                      });
-                      return DropdownButton<dynamic>(
-                        borderRadius: BorderRadius.circular(10),
-                        dropdownColor: Colors.blueGrey[900],
-                        value: dropdownValue,
-                        icon: const Icon(Icons.arrow_downward,color: Colors.white,),
-                        elevation:16,
-                        style: const TextStyle(color: Colors.white,fontSize: 20),
-                        onChanged: (dynamic newValue) {
-                          setState(() {
-                            dropdownValue = newValue!;
-                          });
-                        },
-                        //==============================================================================================here
-                        items:categoryModels
-                            .map(( value) {
-                          return DropdownMenuItem<String>(
-
-                            value: value.name,
-                            child: Text(value.name,),
-                          );
-                        }).toList(),
-                      );
-                    }else{
-                        return   Text('no data');
-                      }
-                      }
-                    ),
-                  ),
-
-
-                ],
-              ),
-              Align(
-               alignment: Alignment.topLeft,
-                child:  Container(
-                  padding: EdgeInsets.fromLTRB(25, 10, 25, 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(15),
-                    color: Colors.yellowAccent[700],
-                  ),
-
-                  child: Text("20% OFF",style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-
-                  ),),
                 ),
-              ),
-              SizedBox(height: 20,),
+                labelText: 'Search for Furniture',
+                labelStyle: TextStyle(
+                  color: Colors.black54,
+                ),),
+            ),
+          ),
+              const SizedBox(height: 20,),
               Container(
                 child: StreamBuilder(
                     stream: FirebaseDatabase.instance.ref().child('Furniture').onValue,
@@ -205,14 +189,14 @@ class _BestDealsScreenState extends State<BestDealsScreen> {
                         });
                         return Expanded(
                           child: GridView(
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
                               childAspectRatio: 2 / 3,
                               crossAxisSpacing: 10,
                               mainAxisSpacing: 10,
                             ),
                             children: itemsModels.where((element) =>
-                            element.category == dropdownValue).map((e) {
+                            element.category.contains(SearchByCategory) || element.Name.contains(SearchByName) || element.Place.contains(SearchByCategory)).map((e) {
                               return BestDealItem(
                                 Img: '${e.Img}',
                                 Place: '${e.Place}',
@@ -224,8 +208,8 @@ class _BestDealsScreenState extends State<BestDealsScreen> {
                             }).toList(),
                           ),
                         );
-                    }else{
-                        return  Center(
+                      }else{
+                        return  const Center(
                           child: CircularProgressIndicator(
                             color: Colors.red,
                           ),
@@ -277,7 +261,7 @@ class _BestDealItemState extends State<BestDealItem> {
           ),),);
       },
       child: Container(
-        padding: EdgeInsets.all(5),
+        padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
           color: Colors.blueGrey[100],
@@ -288,17 +272,17 @@ class _BestDealItemState extends State<BestDealItem> {
           children: <Widget>[
             Align(
               child: InkWell(
-                onTap: (){
-                  setState(() {
-                    if(fav==Colors.white){
-                      fav=Colors.red;
-                      ListOfFavorite.add(ListOfItems[1]);
-                    }else{
-                      fav=Colors.white;
-                    }
+                  onTap: (){
+                    setState(() {
+                      if(fav==Colors.white){
+                        fav=Colors.red;
+                        ListOfFavorite.add(ListOfItems[1]);
+                      }else{
+                        fav=Colors.white;
+                      }
 
-                  });
-                },
+                    });
+                  },
                   child: Icon(
                     Icons.favorite,
                     color: fav,
@@ -349,7 +333,7 @@ class _BestDealItemState extends State<BestDealItem> {
                     children: <Widget>[
                       RichText(
                           text: TextSpan(
-                            text: "before: ",
+                            text: "Price: ",
                             style: GoogleFonts.tajawal(
                               color: Colors.black,
                               fontSize: 16,
@@ -357,32 +341,12 @@ class _BestDealItemState extends State<BestDealItem> {
                             children: <InlineSpan>[
                               TextSpan(
                                 text: "\$ ${widget.Price}",
-                                style: TextStyle(
+                                style: const TextStyle(
                                   height: 1.5,
                                   color: Colors.black,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
-                                  decoration: TextDecoration.lineThrough,
                                   decorationThickness: 2,
-                                ),
-                              ),
-                            ],
-                          )),
-                      RichText(
-                          text: TextSpan(
-                            text: "now: ",
-                            style: GoogleFonts.tajawal(
-                              color: Colors.black,
-                              fontSize: 16,
-                            ),
-                            children: <InlineSpan>[
-                              TextSpan(
-                                text: "\$96",
-                                style: TextStyle(
-                                  height: 1.5,
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
                                 ),
                               ),
                             ],
@@ -398,9 +362,9 @@ class _BestDealItemState extends State<BestDealItem> {
                         borderRadius: BorderRadius.circular(10),
                         child: Container(
                           color: Colors.blueGrey[900],
-                          padding: EdgeInsets.all(5),
-                          child: Center(
-                            child: Icon(
+                          padding: const EdgeInsets.all(5),
+                          child: const Center(
+                            child: const Icon(
                               Icons.shopping_bag,
                               color: Colors.white,
                               size: 25,

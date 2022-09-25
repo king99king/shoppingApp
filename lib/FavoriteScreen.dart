@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -24,6 +28,53 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
   GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
   List<CardItem> itemsModels = List<CardItem>.empty(growable: true);
   List<CartItem> cartItems = List<CartItem>.empty(growable: true);
+  final User? user = FirebaseAuth.instance.currentUser;
+
+  StreamSubscription? connection;
+  bool isoffline = false;
+  @override
+  void initState() {
+    connection = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      // whenevery connection status is changed.
+      if(result == ConnectivityResult.none){
+        //there is no any connection
+        setState(() {
+          isoffline = true;
+        });
+      }else if(result == ConnectivityResult.mobile){
+        //connection is mobile data network
+        setState(() {
+          isoffline = false;
+        });
+      }else if(result == ConnectivityResult.wifi){
+        //connection is from wifi
+        setState(() {
+          isoffline = false;
+        });
+      }else if(result == ConnectivityResult.ethernet){
+        //connection is from wired connection
+        setState(() {
+          isoffline = false;
+        });
+      }else if(result == ConnectivityResult.bluetooth){
+        //connection is from bluetooth threatening
+        setState(() {
+          isoffline = false;
+        });
+      }
+    });
+    super.initState();
+  }
+
+
+  @override
+  void dispose() {
+    connection!.cancel();
+    super.dispose();
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -69,8 +120,8 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                                 size: 30,
                               ),
                             ),
-                            StreamBuilder(
-                                stream: FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID').onValue,
+                             StreamBuilder(
+                                stream: FirebaseDatabase.instance.ref().child('${user?.uid ?? "unknownUser"}').child('Cart').onValue,
                                 builder: (BuildContext context,
                                     AsyncSnapshot<DatabaseEvent> snapshot) {
                                   var numberItemInCart = 0;
@@ -118,7 +169,7 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                   ),
                   Container(
                     child: StreamBuilder(
-                                stream: FirebaseDatabase.instance.ref().child('Favorite').child('UNIQUE_USER_ID').onValue,
+                                stream: FirebaseDatabase.instance.ref().child('${user?.uid ?? "unknownUser"}').child('Favorite').onValue,
                                 builder: (BuildContext context,
                                 AsyncSnapshot<DatabaseEvent> snapshot) {
                                 if (snapshot.hasData) {
@@ -165,6 +216,12 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
       ),
     );
   }
+}
+Future<String>  downloadUrl(String imageName) async{
+
+  String downloadURL=await FirebaseStorage.instance.ref(imageName).getDownloadURL();
+
+  return downloadURL;
 }
 
 class FavoriteItems1 extends StatefulWidget {
@@ -216,7 +273,24 @@ class _FavoriteItems1State extends State<FavoriteItems1> {
                   child: Icon(Icons.remove_circle_outlined,color: Colors.red,size: 30,)),
               alignment: Alignment.topRight,
             ),
-            Image(image: AssetImage(widget.Img,),width: 130,height: 130,fit: BoxFit.fitWidth,),
+            FutureBuilder(
+              future: downloadUrl(widget.Img.trim()),
+              builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                if(snapshot.connectionState == ConnectionState.done && snapshot.hasData){
+                  return Image(
+                    image: NetworkImage(
+                      ' ${snapshot.data}'.trim(),
+
+                    ),
+                    width: 130,
+                    height: 130,
+                    fit: BoxFit.fitWidth,                  );
+                }else if(snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData){
+                  return Center(child: CircularProgressIndicator(),);
+                }
+                return Container();
+              },
+            ),
             Column(
                 // mainAxisAlignment: MainAxisAlignment.end,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,7 +328,7 @@ class _FavoriteItems1State extends State<FavoriteItems1> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: <Widget>[
-                      Text(widget.Price,style: TextStyle(
+                      Text("Price: \$${widget.Price}",style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),),

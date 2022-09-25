@@ -1,10 +1,13 @@
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shoppingapp/AddToCartFirebase.dart';
 import 'package:shoppingapp/Data/AppData.dart';
+import 'package:shoppingapp/checkoutScreen.dart';
 
 
 class CartScreen extends StatefulWidget {
@@ -17,7 +20,7 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   List<CartItem> cartItems = List<CartItem>.empty(growable: true);
   GlobalKey<ScaffoldState> _scaffoldkey = new GlobalKey();
-
+  final User? user = FirebaseAuth.instance.currentUser;
   @override
   Widget build(BuildContext context) {
     var num1=0;
@@ -36,7 +39,7 @@ class _CartScreenState extends State<CartScreen> {
                         onPressed: () {
                           Navigator.pop(context);
                         },
-                        child: Icon(
+                        child: const Icon(
                           Icons.arrow_back_rounded,
                           size: 40,
                           color: Colors.black,
@@ -51,7 +54,7 @@ class _CartScreenState extends State<CartScreen> {
                   ),
                 ),
                 StreamBuilder(
-                  stream: FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID').onValue,
+                  stream: FirebaseDatabase.instance.ref().child('${user?.uid ?? "unknownUser"}').child('Cart').onValue,
                   builder: (BuildContext context,
                   AsyncSnapshot<DatabaseEvent> snapshot) {
                 if (snapshot.hasData) {
@@ -98,7 +101,7 @@ class _CartScreenState extends State<CartScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         StreamBuilder(
-                            stream: FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID').onValue,
+                            stream: FirebaseDatabase.instance.ref().child('${user?.uid ?? "unknownUser"}').child('Cart').onValue,
                             builder: (BuildContext context, AsyncSnapshot<DatabaseEvent> snapshot) {
                               var numberItemInCart = 0;
                               if (snapshot.hasData) {
@@ -126,7 +129,7 @@ class _CartScreenState extends State<CartScreen> {
                                     children: <InlineSpan>[
                                       TextSpan(
                                           text:"${numberItemInCart}",
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 20,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.black,
@@ -145,10 +148,10 @@ class _CartScreenState extends State<CartScreen> {
                                       fontWeight: FontWeight.w600,
                                       color: Colors.grey[800],
                                     ),
-                                    children: <InlineSpan>[
-                                      TextSpan(
+                                    children: const <InlineSpan>[
+                                     TextSpan(
                                           text:"0",
-                                          style: TextStyle(
+                                          style:  TextStyle(
                                             fontSize: 20,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.black,
@@ -160,7 +163,7 @@ class _CartScreenState extends State<CartScreen> {
 
                         ),
                         StreamBuilder(
-                            stream: FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID').onValue,
+                            stream: FirebaseDatabase.instance.ref().child('${user?.uid ?? "unknownUser"}').child('Cart').onValue,
                             builder: (BuildContext context, AsyncSnapshot<DatabaseEvent> snapshot) {
                               var totalPriceCart = 0.0;
                               if (snapshot.hasData) {
@@ -188,7 +191,7 @@ class _CartScreenState extends State<CartScreen> {
                                     children: <InlineSpan>[
                                       TextSpan(
                                           text: "\$${totalPriceCart}",
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 20,
                                             fontWeight: FontWeight.bold,
                                             color: Colors.black,
@@ -210,13 +213,11 @@ class _CartScreenState extends State<CartScreen> {
                       ],
                     ),
                     ElevatedButton(
-                      onPressed: () {},
-                      child: Center(
-                        child: Text(
-                          "Proceed to checkout",
-                          style: TextStyle(fontSize: 20),
-                        ),
-                      ),
+                      onPressed: () {
+
+                        Navigator.push(context, MaterialPageRoute(builder: (context)=>
+                        const checkoutScreen()));
+                      },
                       style: ButtonStyle(
                           shape: MaterialStateProperty.all<RoundedRectangleBorder>(
                               RoundedRectangleBorder(
@@ -224,10 +225,16 @@ class _CartScreenState extends State<CartScreen> {
                             // side: BorderSide(color: Colors.red)
                           )),
                           padding: MaterialStateProperty.resolveWith(
-                              (states) => EdgeInsets.all(22)),
+                              (states) => const EdgeInsets.all(22)),
                           backgroundColor: MaterialStateProperty.resolveWith(
                             (states) => Colors.blueGrey[900],
                           )),
+                      child: const Center(
+                        child: Text(
+                          "Proceed to checkout",
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      ),
                     ),
 
 
@@ -253,6 +260,13 @@ class _CartScreenState extends State<CartScreen> {
       ),
     );
   }
+}
+
+Future<String>  downloadUrl(String imageName) async{
+
+  String downloadURL=await FirebaseStorage.instance.ref(imageName).getDownloadURL();
+
+  return downloadURL;
 }
 
 class ItemWidget extends StatefulWidget {
@@ -287,18 +301,35 @@ class _ItemWidgetState extends State<ItemWidget> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, 10, 0, 10),
       child: Container(
-        padding: EdgeInsets.all(5),
+        padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color: Color(0xffB9B9B9),
+          color: const Color(0xffB9B9B9),
         ),
         child: Row(
           children: [
-            Image(
-              image: AssetImage("${widget.Img}"),
-              fit: BoxFit.fitWidth,
-              width: 120,
+            FutureBuilder(
+              future: downloadUrl('${widget.Img}'.trim()),
+              builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                if(snapshot.connectionState == ConnectionState.done && snapshot.hasData){
+                  return Image(
+                    image: NetworkImage(
+                      ' ${snapshot.data}'.trim(),
+
+                    ),
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.fitWidth,                  );
+                }else if(snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData){
+                  return Container(
+                      width:120,
+                      height: 120,
+                      child: const Center(child: const CircularProgressIndicator(),));
+                }
+                return Container();
+              },
             ),
+
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -320,7 +351,7 @@ class _ItemWidgetState extends State<ItemWidget> {
                     children: <InlineSpan>[
                       TextSpan(
                           text: "\$${widget.Price}",
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
@@ -347,11 +378,11 @@ class _ItemWidgetState extends State<ItemWidget> {
                         }
 
                       },
-                      icon: Icon(Icons.indeterminate_check_box_outlined),
+                      icon: const Icon(Icons.indeterminate_check_box_outlined),
                     ),
                     Text(
                       "${widget.quantity}",
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -362,15 +393,44 @@ class _ItemWidgetState extends State<ItemWidget> {
                         widget.items.totalPrice=double.parse(widget.Price)*widget.items.quantity;
                         updateToCart(widget.scaffoldkey,widget.items, context);
                       },
-                      icon: Icon(Icons.add_box_outlined),
+                      icon: const Icon(Icons.add_box_outlined),
                     ),
                   ],
                 ),
-                Text('${widget.totalPrice}'),
+                Text.rich(
+                  TextSpan(
+                    text: "Total Price:  ",
+                    style: GoogleFonts.tajawal(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey[800],
+                    ),
+                    children: <InlineSpan>[
+                      TextSpan(
+                          text: "\$ ${widget.totalPrice}",
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          )),
+                    ],
+                  ),
+                ),
                 ElevatedButton(
                   onPressed: () {
                     deleteCart(widget.scaffoldkey,widget.items, context);
                   },
+                  style: ButtonStyle(
+                      shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+                          RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30.0),
+                        // side: BorderSide(color: Colors.red)
+                      )),
+                      padding: MaterialStateProperty.resolveWith(
+                          (states) => const EdgeInsets.all(8)),
+                      backgroundColor: MaterialStateProperty.resolveWith(
+                        (states) => Colors.blueGrey[900],
+                      )),
                   child: Center(
                     child: Text(
                       "Remove the Item",
@@ -381,17 +441,6 @@ class _ItemWidgetState extends State<ItemWidget> {
                       ),
                     ),
                   ),
-                  style: ButtonStyle(
-                      shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                          RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30.0),
-                        // side: BorderSide(color: Colors.red)
-                      )),
-                      padding: MaterialStateProperty.resolveWith(
-                          (states) => EdgeInsets.all(8)),
-                      backgroundColor: MaterialStateProperty.resolveWith(
-                        (states) => Colors.blueGrey[900],
-                      )),
                 )
               ],
             )

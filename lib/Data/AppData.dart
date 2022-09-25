@@ -186,7 +186,46 @@ class FavoriteItems {
 
 
 
+class CheckoutList {
+  late String key;
+  late String Img;
+  late String Place;
+  late String Name;
+  late String Price;
+  late String Detailes;
+  late String category;
+  late int rate;
+  //late int? numItemsSold;
+//  late bool discount;
 
+  CheckoutList(
+      {required this.key,
+        required this.Img,
+        required this.Place,
+        required this.Name,
+        required this.Price,
+        required this.Detailes
+      });
+
+  CheckoutList.fromJson(Map<dynamic, dynamic> json) {
+    key = json['key'].toString();
+    Img = json['Img'].toString();
+    Place = json['Place'].toString();
+    Name = json['Name'].toString();
+    Detailes = json['Detailes'].toString();
+    Price = json['Price'].toString();
+  }
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = new Map<String, dynamic>();
+    data['key'] = this.key;
+    data['Img'] = this.Img;
+    data['Place'] = this.Place;
+    data['Name'] = this.Name;
+    data['Detailes'] = this.Detailes;
+    data['Price'] = this.Price;
+    return data;
+  }
+}
 
 
 

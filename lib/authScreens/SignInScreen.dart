@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -24,13 +28,60 @@ class _SignInScreenState extends State<SignInScreen> {
   late String _passwordController = TextEditingController() as String;
   String get email => _emailController.trim();
   String get password => _passwordController.trim();
+  StreamSubscription? connection;
+  bool isoffline = false;
+  @override
+  void initState() {
+    connection = Connectivity().onConnectivityChanged.listen((ConnectivityResult result) {
+      // whenevery connection status is changed.
+      if(result == ConnectivityResult.none){
+        //there is no any connection
+        setState(() {
+          isoffline = true;
+        });
+      }else if(result == ConnectivityResult.mobile){
+        //connection is mobile data network
+        setState(() {
+          isoffline = false;
+        });
+      }else if(result == ConnectivityResult.wifi){
+        //connection is from wifi
+        setState(() {
+          isoffline = false;
+        });
+      }else if(result == ConnectivityResult.ethernet){
+        //connection is from wired connection
+        setState(() {
+          isoffline = false;
+        });
+      }else if(result == ConnectivityResult.bluetooth){
+        //connection is from bluetooth threatening
+        setState(() {
+          isoffline = false;
+        });
+      }
+    });
+    super.initState();
+  }
+
+
+  @override
+  void dispose() {
+    connection!.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
-        child: Container(
+        child: isoffline? Center(child:
+        Text("You are offline, \n Please connect your phone",style: TextStyle(
+          fontSize: 30,
+
+        ),
+          textAlign: TextAlign.center,),):Container(
           padding: EdgeInsets.fromLTRB(0, 20, 0, 30),
           decoration: BoxDecoration(
             image: DecorationImage(
@@ -148,16 +199,18 @@ class _SignInScreenState extends State<SignInScreen> {
                     InkWell(
                       onTap:()async{
                         final bool? vlid=_formKey.currentState?.validate();
-                        final user =await _auth.signInWithEmailAndPassword(email: email, password: password);
+                       try{ final user =await _auth.signInWithEmailAndPassword(email: email, password: password);
                         if(user != null && vlid ==true){
                           setState(() {
                             showSoinner=true;
                           });
                          SharedPreferences preferences =await SharedPreferences.getInstance();
                           preferences.setString('email', email);
-                          Navigator.pushReplacement(
-                              context, MaterialPageRoute(builder: (context) => HomeScreen()));
-                        }
+                          Navigator.pushAndRemoveUntil(
+                              context, MaterialPageRoute(builder: (context) => HomeScreen()),(route) => false,);
+                        }}catch(e){
+                         showAlertDialogError(context,'$e');
+                       }
 
                       },
                       child: Container(
@@ -205,4 +258,38 @@ class _SignInScreenState extends State<SignInScreen> {
       ),
     );
   }
+}
+
+
+
+void showAlertDialogError(BuildContext context,String error) {
+
+  // set up the button
+  Widget okButton = TextButton(
+    child: const Text("OK"),
+    onPressed: ()=>  Navigator.pop(context),
+
+  );
+
+  // set up the AlertDialog
+  AlertDialog alert =  AlertDialog(
+
+
+    //title: Text("alert!"),
+    content: Text(error,style: GoogleFonts.tajawal(
+      fontSize: 25,
+    ),textAlign: TextAlign.center,),
+    actions: [
+      okButton,
+    ],
+  );
+
+  // show the dialog
+  showDialog(
+    barrierDismissible: false,
+    context: context,
+    builder: (BuildContext context) {
+      return alert;
+    },
+  );
 }

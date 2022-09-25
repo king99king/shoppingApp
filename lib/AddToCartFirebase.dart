@@ -1,15 +1,15 @@
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:shoppingapp/Data/AppData.dart';
 import 'package:shoppingapp/refrancePages/model/cart_model.dart';
 
-
-void addToCart(GlobalKey<ScaffoldState> scaffoldkey, CardItem cardItem,
-    BuildContext context) {
+final User? user = FirebaseAuth.instance.currentUser;
+void addToCart(GlobalKey<ScaffoldState> scaffoldkey, CardItem cardItem, BuildContext context) {
   var cart =
-      FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID');
+      FirebaseDatabase.instance.ref().child('${user?.uid ?? "unknownUser"}').child('Cart');
   cart.child(cardItem.key).once().then((event) {
     final dataSnapshot = event.snapshot;
     if (dataSnapshot.value != null) {
@@ -43,7 +43,7 @@ void addToCart(GlobalKey<ScaffoldState> scaffoldkey, CardItem cardItem,
 void updateToCart(GlobalKey<ScaffoldState> scaffoldkey, CartItem cartItem,
     BuildContext context) {
   var cart =
-      FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID');
+      FirebaseDatabase.instance.ref().child('${user?.uid ?? "unknownUser"}').child('Cart');
   cart
       .child(cartItem.key)
       .set(cartItem.toJson())
@@ -51,7 +51,7 @@ void updateToCart(GlobalKey<ScaffoldState> scaffoldkey, CartItem cartItem,
           duration: Duration(seconds: 1),
           elevation: 5,
           content: Text(
-            "added Successfully",
+            "Cart Updated Successfully",
           ))))
       .catchError((e) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           duration: Duration(seconds: 1),
@@ -64,7 +64,7 @@ void updateToCart(GlobalKey<ScaffoldState> scaffoldkey, CartItem cartItem,
 void deleteCart(GlobalKey<ScaffoldState> scaffoldkey, CartItem cartItem,
     BuildContext context) {
   var cart =
-      FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID');
+      FirebaseDatabase.instance.ref().child('${user?.uid ?? "unknownUser"}').child('Cart');
   cart
       .child(cartItem.key)
       .remove()
@@ -72,7 +72,7 @@ void deleteCart(GlobalKey<ScaffoldState> scaffoldkey, CartItem cartItem,
           duration: Duration(seconds: 1),
           elevation: 5,
           content: Text(
-            "added Successfully",
+            "deleted Successfully",
           ))))
       .catchError((e) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           duration: Duration(seconds: 1),
@@ -86,7 +86,7 @@ void deleteCart(GlobalKey<ScaffoldState> scaffoldkey, CartItem cartItem,
 void addToFavorite(GlobalKey<ScaffoldState> scaffoldkey, CardItem cardItem,
     BuildContext context) {
   var favorite =
-  FirebaseDatabase.instance.ref().child('Favorite').child('UNIQUE_USER_ID');
+  FirebaseDatabase.instance.ref().child('${user?.uid ?? "unknownUser"}').child('Favorite');
   favorite.child(cardItem.key).once().then((event) {
     final dataSnapshot = event.snapshot;
     if (dataSnapshot.value != null) {
@@ -124,7 +124,7 @@ void addToFavorite(GlobalKey<ScaffoldState> scaffoldkey, CardItem cardItem,
 void deleteFromFavorite(GlobalKey<ScaffoldState> scaffoldkey, FavoriteItems cartModel,
     BuildContext context) {
   var favorite =
-  FirebaseDatabase.instance.ref().child('Favorite').child('UNIQUE_USER_ID');
+  FirebaseDatabase.instance.ref().child('${user?.uid ?? "unknownUser"}').child('Favorite');
   favorite.child(cartModel.key).remove()
       .then((value) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       duration: Duration(seconds: 1),
@@ -142,7 +142,7 @@ void deleteFromFavorite(GlobalKey<ScaffoldState> scaffoldkey, FavoriteItems cart
 void addToCartFromFavorite(GlobalKey<ScaffoldState> scaffoldkey, FavoriteItems cardItem,
     BuildContext context) {
   var cart =
-  FirebaseDatabase.instance.ref().child('Cart').child('UNIQUE_USER_ID');
+  FirebaseDatabase.instance.ref().child('${user?.uid ?? "unknownUser"}').child('Cart');
   cart.child(cardItem.key).once().then((event) {
     final dataSnapshot = event.snapshot;
     if (dataSnapshot.value != null) {
@@ -172,3 +172,5 @@ void addToCartFromFavorite(GlobalKey<ScaffoldState> scaffoldkey, FavoriteItems c
     }
   });
 }
+
+

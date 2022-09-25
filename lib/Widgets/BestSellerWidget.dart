@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:shoppingapp/AddToCartFirebase.dart';
+import 'package:shoppingapp/BestSellerScreen.dart';
 import 'package:shoppingapp/Data/AppData.dart';
 import 'package:shoppingapp/DetailsScreen.dart';
 
@@ -13,6 +15,15 @@ class BestSellerWidget extends StatefulWidget {
 
   @override
   State<BestSellerWidget> createState() => _BestSellerWidgetState();
+}
+
+
+
+Future<String>  downloadUrl(String imageName) async{
+
+  String downloadURL=await FirebaseStorage.instance.ref(imageName).getDownloadURL();
+
+  return downloadURL;
 }
 
 class _BestSellerWidgetState extends State<BestSellerWidget> {
@@ -38,7 +49,10 @@ class _BestSellerWidgetState extends State<BestSellerWidget> {
                 fontSize: 20,
               ),),
             InkWell(
-              onTap: (){},
+              onTap: (){
+                Navigator.push(context, MaterialPageRoute(builder: (context)=>
+                const BestSellerScreen()));
+              },
               child:Text("View all" , style: TextStyle(
                 color: Colors.black,
                 fontSize: 18,
@@ -91,7 +105,31 @@ class _BestSellerWidgetState extends State<BestSellerWidget> {
 
                                   Hero(
                                       tag:'item',
-                                      child: Image(image: AssetImage('${itemsModels[index].Img}',),width: 190,height: 190,)),
+                                      child: FutureBuilder(
+                                        future: downloadUrl('${itemsModels[index].Img}'.trim()),
+                                        builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+                                          if(snapshot.connectionState == ConnectionState.done && snapshot.hasData){
+                                            return Image(
+                                              image: NetworkImage(
+                                                ' ${snapshot.data}'.trim(),
+
+                                              ),
+                                              width: 190,
+                                              height: 190,
+                                              fit: BoxFit.fitWidth,                  );
+                                          }else if(snapshot.connectionState == ConnectionState.waiting || !snapshot.hasData){
+                                            return Container(
+                                              width:190,
+                                              height:190,
+                                              child: Center(
+                                                child: CircularProgressIndicator(
+
+                                            ),
+                                              ),);
+                                          }
+                                          return Container();
+                                        },
+                                      ), ),
                                   Column(
                                       mainAxisAlignment: MainAxisAlignment.end,
                                       crossAxisAlignment: CrossAxisAlignment.start,

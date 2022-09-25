@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shoppingapp/SearchScreen.dart';
 
 class searchBar extends StatelessWidget {
   const searchBar({Key? key}) : super(key: key);
@@ -8,6 +9,8 @@ class searchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: (){
+        Navigator.push(context, MaterialPageRoute(builder: (context)=>
+            searchScreen()));
       },
       child: Container(
         width: 130,
